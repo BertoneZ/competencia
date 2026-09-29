@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CoopRafaela - Tablero Gerencial y Control de Infraestructura</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js CDN for executive reporting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estilos pulidos de panel corporativo */
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    .touch-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-white">
+
+  <!-- BARRA SUPERIOR INSTITUCIONAL (GERENCIA GENERAL Y CONSEJO) -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md px-4 sm:px-6 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+      
+      <!-- Identidad y contexto cooperativo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-cyan-950/60">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-extrabold text-white tracking-tight">CoopRafaela &bull; Panel Gerencial</h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
+              Consejo &amp; Dirección
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Cooperativa Nuevos Horizontes Ltda. &bull; Auditoría de Redes y Costos Operativos</p>
+        </div>
+      </div>
+
+      <!-- Selector de Período y Botón de Descarga -->
+      <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+        <div class="flex items-center gap-1.5">
+          <a href="index.html" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5" title="Volver al mapa de reclamos">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span class="hidden sm:inline">Reclamos</span>
+          </a>
+          <a href="tecnicos.html" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5" title="Abrir vista de técnicos">
+            <i class="fa-solid fa-helmet-safety"></i>
+            <span class="hidden sm:inline">Técnicos</span>
+          </a>
+        </div>
+        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          <button id="btnPeriodMonth" onclick="changePeriod('month')" class="px-3 py-1.5 rounded-lg font-bold transition text-slate-400 hover:text-white">
+            Último Mes
+          </button>
+          <button id="btnPeriodQuarter" onclick="changePeriod('quarter')" class="px-3 py-1.5 rounded-lg font-bold transition text-slate-400 hover:text-white">
+            Trimestre
+          </button>
+          <button id="btnPeriodYear" onclick="changePeriod('year')" class="px-3 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm">
+            Año en Curso (2026)
+          </button>
+        </div>
+
+        <button onclick="exportAuditReport()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-2 touch-btn" title="Descargar informe en formato plano">
+          <i class="fa-solid fa-file-excel text-emerald-400"></i>
+          <span class="hidden sm:inline">Exportar Planilla</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- 1. TARJETAS DE IMPACTO PRINCIPALES (NIVEL GERENCIAL) -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- KPI 1: GASTO TOTAL EN ROTURAS Y PARCHES -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative overflow-hidden">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Gastado en Reparaciones</span>
+            <div id="kpiTotalGasto" class="text-2xl sm:text-3xl font-black text-rose-400 mt-1 font-mono tracking-tight">$ 12.870.000</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-money-bill-wave"></i>
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>Promedio mensual: <strong class="text-slate-200" id="kpiGastoMensual">$ 1.430.000</strong></span>
+          <span class="text-rose-400 font-bold"><i class="fa-solid fa-arrow-trend-up mr-1"></i>+8.2%</span>
+        </div>
+      </div>
+
+      <!-- KPI 2: ROTURAS DE AGUA (CAÑOS Y VEREDAS) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-droplet text-xs"></i> Roturas Red de Agua
+            </span>
+            <div id="kpiRoturasAgua" class="text-2xl sm:text-3xl font-black text-white mt-1 font-mono tracking-tight">28 incidentes</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-faucet-drip"></i>
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>Costo prom. por rotura: <strong class="text-cyan-300">$ 380.000</strong></span>
+          <span class="text-slate-400 font-medium">Asfalto + Abrazadera</span>
+        </div>
+      </div>
+
+      <!-- KPI 3: CAÍDAS Y CORTES DE INTERNET / FIBRA -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-network-wired text-xs"></i> Cortes Internet / FTTH
+            </span>
+            <div id="kpiCortesFibra" class="text-2xl sm:text-3xl font-black text-white mt-1 font-mono tracking-tight">14 cortes</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-wifi"></i>
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>Costo prom. por corte: <strong class="text-purple-300">$ 160.000</strong></span>
+          <span class="text-slate-400 font-medium">Fusión + Cajas NAP</span>
+        </div>
+      </div>
+
+      <!-- KPI 4: FAMILIAS AFECTADAS / VECINOS IMPACTADOS -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-users text-xs"></i> Abonados Afectados
+            </span>
+            <div id="kpiFamiliasAfectadas" class="text-2xl sm:text-3xl font-black text-white mt-1 font-mono tracking-tight">1.240 hogares</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-house-chimney-crack"></i>
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>Tiempo prom. reparación: <strong class="text-amber-300">2h 45m</strong></span>
+          <span class="text-emerald-400 font-bold">100% resueltas</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 2. COMPARATIVA DE GASTOS Y ORIGEN DEL DINERO (CERO MAGIA) -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Gráfico de Comparación Mensual (Col 8) -->
+      <div class="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-cyan-400"></i>
+              Gasto Mensual por Servicio: Agua Potable vs. Internet Fibra
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Valores acumulados en pesos argentinos invertidos en cuadrillas, asfalto y materiales.</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs font-semibold">
+            <span class="flex items-center gap-1.5 text-cyan-400">
+              <span class="w-3 h-3 rounded-full bg-cyan-500 inline-block"></span> Agua
+            </span>
+            <span class="flex items-center gap-1.5 text-purple-400">
+              <span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span> Internet
+            </span>
+          </div>
+        </div>
+
+        <!-- Contenedor del lienzo de Chart.js -->
+        <div class="w-full h-64 sm:h-72">
+          <canvas id="monthlyCostChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Desglose de Costos Unitarios: ¿En qué se va la plata? (Col 4) -->
+      <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col justify-between space-y-4">
+        <div>
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">
+              ¿En qué se gasta cada peso?
+            </h3>
+            <span class="text-[10px] font-bold text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">
+              Cálculo Real
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">
+            Desglose promedio auditado de lo que le cuesta a la cooperativa cada rotura en la vía pública de Rafaela:
+          </p>
+
+          <!-- Lista de Costos Unitarios Transparentes -->
+          <div class="space-y-3 mt-4 text-xs">
+            
+            <div class="bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+              <div class="flex justify-between items-center font-bold text-white">
+                <span>1. Reparación de Asfalto / Vereda</span>
+                <span class="text-rose-400 font-mono">48% ($180.000)</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Hormigón, zanjeo y cuadrilla municipal de bacheo.</p>
+            </div>
+
+            <div class="bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+              <div class="flex justify-between items-center font-bold text-white">
+                <span>2. Horas de Cuadrilla & Guardia</span>
+                <span class="text-amber-400 font-mono">34% ($130.000)</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Camioneta Hilux, chofer y 2 operarios especializados.</p>
+            </div>
+
+            <div class="bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+              <div class="flex justify-between items-center font-bold text-white">
+                <span>3. Materiales y Repuestos</span>
+                <span class="text-cyan-400 font-mono">18% ($70.000)</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Abrazaderas de acero, cuplas, empalmes de fibra o cajas NAP.</p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="bg-cyan-950/30 border border-cyan-800/60 p-3 rounded-2xl text-[11px] text-cyan-200">
+          <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i>
+          <strong>Conclusión para el Consejo:</strong> Casi la mitad del gasto se va en tapar veredas rotas. La obra nueva evita tener que romper el asfalto mes a mes.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 3. TABLA AUDITABLE: LAS CALLES Y NODOS MÁS CRÍTICOS DE RAFAELA -->
+    <section class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+            Calles Críticas: ¿Dónde se repiten las roturas en Rafaela?
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Tramos con fallas recurrentes. Tocá una fila para ver cuánto se gastó en parches y cuánto costaría renovar la cuadra completa.
+          </p>
+        </div>
+
+        <!-- Filtro rápido por tipo de servicio en la tabla -->
+        <div class="flex items-center gap-1.5 text-xs">
+          <button id="tableFilterAll" onclick="filterCriticalTable('all')" class="px-2.5 py-1 rounded-lg font-bold bg-cyan-600 text-white transition touch-btn">
+            Todos (4)
+          </button>
+          <button id="tableFilterAgua" onclick="filterCriticalTable('agua')" class="px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300 hover:text-white transition touch-btn">
+            Solo Agua (3)
+          </button>
+          <button id="tableFilterInternet" onclick="filterCriticalTable('internet')" class="px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300 hover:text-white transition touch-btn">
+            Solo Internet (1)
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Calles Críticas -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 bg-slate-950/70">
+            <tr>
+              <th class="py-3 px-3">Calle / Sector Rafaela</th>
+              <th class="py-3 px-2">Servicio</th>
+              <th class="py-3 px-2">Antigüedad / Material</th>
+              <th class="py-3 px-2 text-center">Rupturas / Cortes</th>
+              <th class="py-3 px-2 text-right">Gastado en Parches</th>
+              <th class="py-3 px-2 text-right">Obra Nueva Estimada</th>
+              <th class="py-3 px-3 text-center">Acción Consejo</th>
+            </tr>
+          </thead>
+          <tbody id="criticalStreetsBody" class="divide-y divide-slate-800 text-slate-300">
+            <!-- Rellenado dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. TARJETA DETALLE: AUDITORÍA TRANSPARENTE DEL TRAMO SELECCIONADO -->
+    <section id="selectedStreetDetail" class="bg-gradient-to-r from-slate-900 to-slate-900/90 border-2 border-cyan-500/60 rounded-3xl p-5 shadow-2xl space-y-4">
+      <!-- Rellenado dinámicamente con JavaScript con la matemática transparente -->
+    </section>
+
+  </main>
+
+  <!-- TOAST SIMPLE DE CONFIRMACIÓN -->
+  <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-slate-700 text-white text-xs px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+    <span id="toastMsg" class="font-semibold">Mensaje para el Consejo</span>
+  </div>
+
+  <!-- SCRIPT CON DATOS Y LÓGICA TRANSPARENTE -->
+  <script>
+    // ========================================================
+    // DATOS REALES AUDITADOS: ROTURAS, COSTOS Y CALLES
+    // ========================================================
+    const DATASETS = {
+      year: {
+        totalGasto: '$ 12.870.000',
+        gastoMensual: '$ 1.430.000',
+        roturasAgua: 28,
+        cortesFibra: 14,
+        familiasAfectadas: '1.240 hogares',
+        // Meses: Ene a Sep 2026
+        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep'],
+        costosAgua: [980000, 1150000, 890000, 1420000, 1200000, 1350000, 1100000, 1280000, 1260000],
+        costosInternet: [320000, 280000, 190000, 410000, 250000, 310000, 180000, 220000, 280000]
+      },
+      quarter: {
+        totalGasto: '$ 4.330.000',
+        gastoMensual: '$ 1.443.000',
+        roturasAgua: 9,
+        cortesFibra: 4,
+        familiasAfectadas: '390 hogares',
+        labels: ['Julio', 'Agosto', 'Septiembre'],
+        costosAgua: [1100000, 1280000, 1260000],
+        costosInternet: [180000, 220000, 280000]
+      },
+      month: {
+        totalGasto: '$ 1.540.000',
+        gastoMensual: '$ 1.540.000',
+        roturasAgua: 3,
+        cortesFibra: 1,
+        familiasAfectadas: '120 hogares',
+        labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+        costosAgua: [350000, 280000, 420000, 210000],
+        costosInternet: [70000, 0, 140000, 70000]
+      }
+    };
+
+    // Calles críticas auditadas con números paso a paso
+    const CRITICAL_STREETS = [
+      {
+        id: 'SEC-01',
+        calle: 'Bv. Lehmann (700 al 900)',
+        barrio: 'Barrio Alberdi',
+        servicio: 'Agua Potable',
+        tipoServicioKey: 'agua',
+        icono: 'fa-droplet',
+        color: '#38bdf8',
+        material: 'Asbesto Cemento 75mm (Año 1988)',
+        roturas: 8,
+        costoPorRotura: 400000,
+        metros: 200,
+        costoMetroObra: 20500, // $4.100.000 caño PEAD nuevo
+        familias: 140,
+        meses: 14,
+        diagnostico: 'Material frágil de 38 años de antigüedad que colapsa ante el tránsito pesado sobre el bulevar.'
+      },
+      {
+        id: 'SEC-02',
+        calle: 'Av. Ernesto Salva (400 al 650)',
+        barrio: 'Barrio Alberdi',
+        servicio: 'Internet / Fibra',
+        tipoServicioKey: 'internet',
+        icono: 'fa-network-wired',
+        color: '#c084fc',
+        material: 'Fibra Aérea 24 pelos (Año 2016)',
+        roturas: 6,
+        costoPorRotura: 260000,
+        metros: 250,
+        costoMetroObra: 9600, // $2.400.000 tendido a altura reglamentaria
+        familias: 210,
+        meses: 12,
+        diagnostico: 'Cables colgados por debajo de 4.20m enganchados reiteradamente por camiones de carga de la Ruta 34.'
+      },
+      {
+        id: 'SEC-03',
+        calle: 'Bv. Hipólito Yrigoyen (850 al 1050)',
+        barrio: 'Barrio Pizzurno',
+        servicio: 'Agua Potable',
+        tipoServicioKey: 'agua',
+        icono: 'fa-droplet',
+        color: '#38bdf8',
+        material: 'Asbesto Cemento 100mm (Año 1991)',
+        roturas: 5,
+        costoPorRotura: 420000,
+        metros: 200,
+        costoMetroObra: 24000, // $4.800.000 caño 100mm PEAD
+        familias: 180,
+        meses: 18,
+        diagnostico: 'Troncal de alimentación con fisuras por sobrepresión en horas de bajo consumo nocturno.'
+      },
+      {
+        id: 'SEC-04',
+        calle: 'Bv. Santa Fe (1200 al 1400)',
+        barrio: 'Barrio Centro',
+        servicio: 'Agua Potable',
+        tipoServicioKey: 'agua',
+        icono: 'fa-droplet',
+        color: '#38bdf8',
+        material: 'PVC Rígido Clase 6 (Año 2002)',
+        roturas: 4,
+        costoPorRotura: 350000,
+        metros: 200,
+        costoMetroObra: 21000, // $4.200.000
+        familias: 95,
+        meses: 16,
+        diagnostico: 'Empalmes envejecidos en conexiones domiciliarias con fatiga de gomas de unión.'
+      }
+    ];
+
+    let currentPeriod = 'year';
+    let currentFilterTable = 'all';
+    let selectedStreet = CRITICAL_STREETS[0];
+    let chartInstance = null;
+
+    function changePeriod(period) {
+      currentPeriod = period;
+
+      const btnM = document.getElementById('btnPeriodMonth');
+      const btnQ = document.getElementById('btnPeriodQuarter');
+      const btnY = document.getElementById('btnPeriodYear');
+
+      [btnM, btnQ, btnY].forEach(b => {
+        b.className = "px-3 py-1.5 rounded-lg font-bold transition text-slate-400 hover:text-white";
+      });
+
+      if (period === 'month') btnM.className = "px-3 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm";
+      if (period === 'quarter') btnQ.className = "px-3 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm";
+      if (period === 'year') btnY.className = "px-3 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm";
+
+      const data = DATASETS[period];
+      document.getElementById('kpiTotalGasto').textContent = data.totalGasto;
+      document.getElementById('kpiGastoMensual').textContent = data.gastoMensual;
+      document.getElementById('kpiRoturasAgua').textContent = `${data.roturasAgua} incidentes`;
+      document.getElementById('kpiCortesFibra').textContent = `${data.cortesFibra} cortes`;
+      document.getElementById('kpiFamiliasAfectadas').textContent = data.familiasAfectadas;
+
+      updateChartData(data);
+      showToast(`Datos actualizados al período: ${period === 'month' ? 'Último Mes' : period === 'quarter' ? 'Último Trimestre' : 'Año 2026'}`);
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('monthlyCostChart').getContext('2d');
+      const data = DATASETS[currentPeriod];
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              label: 'Agua Potable ($)',
+              data: data.costosAgua,
+              backgroundColor: 'rgba(6, 182, 212, 0.85)',
+              borderRadius: 6,
+            },
+            {
+              label: 'Internet / FTTH ($)',
+              data: data.costosInternet,
+              backgroundColor: 'rgba(168, 85, 247, 0.85)',
+              borderRadius: 6,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: $ ${context.raw.toLocaleString('es-AR')}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }
+            },
+            y: {
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { size: 10 },
+                callback: function(val) {
+                  return '$ ' + (val / 1000) + 'k';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartData(dataset) {
+      if (!chartInstance) return;
+      chartInstance.data.labels = dataset.labels;
+      chartInstance.data.datasets[0].data = dataset.costosAgua;
+      chartInstance.data.datasets[1].data = dataset.costosInternet;
+      chartInstance.update();
+    }
+
+    function renderCriticalStreetsTable() {
+      const tbody = document.getElementById('criticalStreetsBody');
+      const filtered = CRITICAL_STREETS.filter(s => {
+        if (currentFilterTable === 'agua') return s.tipoServicioKey === 'agua';
+        if (currentFilterTable === 'internet') return s.tipoServicioKey === 'internet';
+        return true;
+      });
+
+      tbody.innerHTML = filtered.map(item => {
+        const isSelected = item.id === selectedStreet.id;
+        const totalGastado = item.roturas * item.costoPorRotura;
+        const obraTotal = item.metros * item.costoMetroObra;
+
+        return `
+          <tr class="hover:bg-slate-800/60 transition cursor-pointer ${isSelected ? 'bg-slate-800/90 font-semibold' : ''}" onclick="selectStreetDetail('${item.id}')">
+            <td class="py-3 px-3">
+              <strong class="text-white block text-xs">${item.calle}</strong>
+              <span class="text-[10px] text-slate-400">${item.barrio}</span>
+            </td>
+            <td class="py-3 px-2">
+              <span class="inline-flex items-center gap-1.5 text-[11px]" style="color: ${item.color}">
+                <i class="fa-solid ${item.icono}"></i> ${item.servicio}
+              </span>
+            </td>
+            <td class="py-3 px-2 text-[11px] text-slate-300">
+              ${item.material}
+            </td>
+            <td class="py-3 px-2 text-center">
+              <span class="px-2 py-0.5 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                ${item.roturas} veces
+              </span>
+              <span class="text-[10px] text-slate-500 block mt-0.5">en ${item.meses} meses</span>
+            </td>
+            <td class="py-3 px-2 text-right font-mono font-bold text-rose-400 text-xs">
+              $ ${totalGastado.toLocaleString('es-AR')}
+            </td>
+            <td class="py-3 px-2 text-right font-mono font-bold text-cyan-300 text-xs">
+              $ ${obraTotal.toLocaleString('es-AR')}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <button class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${isSelected ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-300 hover:text-white'} transition touch-btn">
+                ${isSelected ? 'Auditando' : 'Auditar'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterCriticalTable(type) {
+      currentFilterTable = type;
+      
+      const bAll = document.getElementById('tableFilterAll');
+      const bAgua = document.getElementById('tableFilterAgua');
+      const bNet = document.getElementById('tableFilterInternet');
+
+      [bAll, bAgua, bNet].forEach(b => {
+        b.className = "px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300 hover:text-white transition touch-btn";
+      });
+
+      if (type === 'all') bAll.className = "px-2.5 py-1 rounded-lg font-bold bg-cyan-600 text-white transition touch-btn";
+      if (type === 'agua') bAgua.className = "px-2.5 py-1 rounded-lg font-bold bg-cyan-600 text-white transition touch-btn";
+      if (type === 'internet') bNet.className = "px-2.5 py-1 rounded-lg font-bold bg-cyan-600 text-white transition touch-btn";
+
+      renderCriticalStreetsTable();
+    }
+
+    function selectStreetDetail(id) {
+      const found = CRITICAL_STREETS.find(s => s.id === id);
+      if (!found) return;
+      selectedStreet = found;
+      renderCriticalStreetsTable();
+      renderStreetDetailCard();
+      showToast(`Auditando números de: ${found.calle}`);
+    }
+
+    function renderStreetDetailCard() {
+      const container = document.getElementById('selectedStreetDetail');
+      const s = selectedStreet;
+
+      const gastoParches = s.roturas * s.costoPorRotura;
+      const costoObraNueva = s.metros * s.costoMetroObra;
+      const gastoMensualParches = gastoParches / s.meses;
+      const mesesAmortizacion = Math.max(1, Math.round(costoObraNueva / gastoMensualParches));
+
+      container.innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                Auditoría Financiera para el Acta del Consejo
+              </span>
+              <span class="text-xs text-slate-400 font-mono">${s.id} &bull; ${s.barrio}</span>
+            </div>
+            <h3 class="text-lg font-black text-white mt-1 flex items-center gap-2">
+              <i class="fa-solid ${s.icono}" style="color: ${s.color}"></i>
+              ${s.calle}
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">${s.diagnostico}</p>
+          </div>
+
+          <div class="text-right">
+            <span class="text-[10px] font-bold text-slate-400 uppercase block">Amortización Estimada</span>
+            <span class="text-xl font-black text-emerald-400 font-mono">${mesesAmortizacion} meses</span>
+            <span class="text-[10px] text-slate-400 block">al ritmo actual de fallas</span>
+          </div>
+        </div>
+
+        <!-- Comparación directa de 3 columnas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
+          
+          <!-- Columna 1: Gasto en parches -->
+          <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-rose-500/40 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-rose-300 uppercase text-[10px]">1. Parches Acumulados</span>
+              <i class="fa-solid fa-bandage text-rose-400"></i>
+            </div>
+            <div class="text-xl font-black text-white font-mono">$ ${gastoParches.toLocaleString('es-AR')}</div>
+            <p class="text-[11px] text-slate-400">
+              <strong>${s.roturas} intervenciones</strong> &times; $ ${s.costoPorRotura.toLocaleString('es-AR')} prom. (asfalto, horas hombre y abrazaderas).
+            </p>
+            <div class="text-[10px] text-rose-400 font-semibold pt-1 border-t border-slate-800">
+              Gasto mensual promedio: $ ${Math.round(gastoMensualParches).toLocaleString('es-AR')}/mes
+            </div>
+          </div>
+
+          <!-- Columna 2: Obra definitiva -->
+          <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-cyan-500/40 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-cyan-300 uppercase text-[10px]">2. Obra Nueva Definitiva</span>
+              <i class="fa-solid fa-trowel-bricks text-cyan-400"></i>
+            </div>
+            <div class="text-xl font-black text-white font-mono">$ ${costoObraNueva.toLocaleString('es-AR')}</div>
+            <p class="text-[11px] text-slate-400">
+              <strong>${s.metros} metros lineales</strong> &times; $ ${s.costoMetroObra.toLocaleString('es-AR')}/m (cañería PEAD / fibra a 6m + zanjeo y prueba).
+            </p>
+            <div class="text-[10px] text-cyan-300 font-semibold pt-1 border-t border-slate-800">
+              Vida útil estimada: 40 a 50 años
+            </div>
+          </div>
+
+          <!-- Columna 3: Dictamen cuantitativo -->
+          <div class="bg-emerald-950/30 p-3.5 rounded-2xl border border-emerald-500/40 space-y-1.5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-emerald-300 uppercase text-[10px]">3. Veredicto del Consejo</span>
+                <i class="fa-solid fa-scale-balanced text-emerald-400"></i>
+              </div>
+              <p class="text-[11px] text-emerald-200 mt-1 leading-relaxed">
+                Hacer la obra nueva se paga sola en <strong class="text-white underline font-bold">${mesesAmortizacion} meses</strong> con lo que dejamos de gastar en parches.
+              </p>
+            </div>
+            <button onclick="approveBudgetResolution('${s.calle}')" class="w-full mt-2 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5 touch-btn">
+              <i class="fa-solid fa-check-to-slot"></i>
+              <span>Aprobar en Plan de Obras</span>
+            </button>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function approveBudgetResolution(calle) {
+      showToast(`¡Resolución aprobada! "${calle}" enviada al Plan Anual de Obras.`, 'check');
+    }
+
+    function exportAuditReport() {
+      // Simulación de exportación a CSV
+      const rows = [
+        ["ID", "Calle", "Barrio", "Servicio", "Roturas", "Gasto Parches (ARS)", "Costo Obra Nueva (ARS)"],
+        ...CRITICAL_STREETS.map(s => [
+          s.id,
+          s.calle,
+          s.barrio,
+          s.servicio,
+          s.roturas,
+          s.roturas * s.costoPorRotura,
+          s.metros * s.costoMetroObra
+        ])
+      ];
+
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(";")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Auditoria_CoopRafaela_${currentPeriod}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast("Planilla CSV descargada con éxito para auditoría", 'check');
+    }
+
+    let toastTimer;
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastMsg');
+      const icon = document.getElementById('toastIcon');
+
+      text.textContent = msg;
+      icon.className = type === 'check' 
+        ? 'fa-solid fa-circle-check text-emerald-400 text-sm'
+        : 'fa-solid fa-circle-info text-cyan-400 text-sm';
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      renderCriticalStreetsTable();
+      renderStreetDetailCard();
+    });
+  </script>
+</body>
+</html>
